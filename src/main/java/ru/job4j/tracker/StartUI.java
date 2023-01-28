@@ -9,6 +9,7 @@ import ru.job4j.tracker.store.Store;
 
 public class StartUI {
 
+
     public void init(Input input, Store tracker, UserAction[] actions) {
         boolean run = true;
         while (run) {
