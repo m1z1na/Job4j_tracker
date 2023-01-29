@@ -1,7 +1,8 @@
 package ru.job4j.tracker.store;
 
+import org.slf4j.LoggerFactory;
 import ru.job4j.tracker.model.Item;
-
+import org.slf4j.Logger;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.sql.*;
@@ -16,7 +17,7 @@ public class SqlTracker implements Store {
     public SqlTracker() {
         init();
     }
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(SqlTracker.class.getName());
     public SqlTracker(Connection cn) {
         this.cn = cn;
     }
@@ -27,7 +28,6 @@ public class SqlTracker implements Store {
 
          */
         try (InputStream in = new FileInputStream("db/liquibase.properties")) {
-
             Properties config = new Properties();
             config.load(in);
             Class.forName(config.getProperty("driver-class-name"));
@@ -39,7 +39,6 @@ public class SqlTracker implements Store {
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
-
     }
 
     @Override
@@ -51,13 +50,21 @@ public class SqlTracker implements Store {
 
     @Override
     public Item add(Item item) {
-
-        try (PreparedStatement ps = cn.prepareStatement("insert into items(name,created) values(?,?);", Statement.RETURN_GENERATED_KEYS)) {
+        LOGGER.debug("Добавление , name: {}", item.getName());
+        try (PreparedStatement ps = cn.prepareStatement(
+                                "insert into items(name,created) values(?,?);",
+                                    Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, item.getName());
-            ps.setString(2, String.valueOf(item.getCreated()));
+            ps.setTimestamp(2, Timestamp.valueOf(item.getCreated()));
+            try (ResultSet key = ps.getGeneratedKeys()) {
+                if (key.next()) {
+                    item.setId(key.getInt(1));
+                    LOGGER.debug("Генерируем id: {}", item.getId());
+                }
+            }
             ps.execute();
         } catch (Exception e) {
-            throw new IllegalStateException(e);
+            LOGGER.debug("Не удалось добавить", e);
         }
         return item;
     }
@@ -65,94 +72,89 @@ public class SqlTracker implements Store {
 
     @Override
     public boolean replace(int id, Item item) {
-
+        LOGGER.debug("Замена записи item. id: {}, name: {}", id, item.getName());
         boolean result = false;
-        try (PreparedStatement ps = cn.prepareStatement("update items set name = ?, created = ?where id = ?;")) {
+        try (PreparedStatement ps = cn.prepareStatement("update items set name = ?, created = ? where id = ?;")) {
             ps.setString(1, item.getName());
             ps.setString(2, String.valueOf(item.getCreated()));
             ps.setInt(3, id);
             result = ps.executeUpdate() > 0;
         } catch (Exception e) {
-            throw new IllegalStateException(e);
+            LOGGER.debug("Не удалось заменить", e);
         }
         return result;
     }
 
     @Override
     public boolean delete(int id) {
+        LOGGER.debug("Удаление item. id: {}", id);
         boolean result = false;
         try (PreparedStatement ps = cn.prepareStatement("delete from items where id = ?;")) {
             ps.setInt(1, id);
             result = ps.executeUpdate() > 0;
         } catch (Exception e) {
-            throw new IllegalStateException(e);
+            LOGGER.debug("Не удалось удалить", e);
         }
         return result;
     }
 
     @Override
     public List<Item> findAll() {
+        LOGGER.debug("Поиск всех записей");
         List<Item> result = new ArrayList<>();
         try (PreparedStatement ps = cn.prepareStatement("select * from items;")) {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    result.add(new Item(
-                            rs.getInt("id"),
-                            rs.getString("name"),
-                            rs.getString("created")
-                    ));
+                    result.add(createItem( rs ));
                 }
             }
 
         } catch (Exception e) {
-            throw new IllegalStateException(e);
+            LOGGER.debug("Не удалось найти", e);
         }
-
         return result;
     }
 
     @Override
     public List<Item> findByName(String key) {
-
+        LOGGER.debug("Поиск по полю name {}", key);
         List<Item> result = new ArrayList<>();
         try (PreparedStatement ps = cn.prepareStatement("select * from items where name like ?;")) {
             ps.setString(1, "%" + key + "%");
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    result.add(new Item(
-                            rs.getInt("id"),
-                            rs.getString("name"),
-                            rs.getString("created")
-                    ));
+                    result.add( createItem( rs ));
                 }
             }
 
         } catch (Exception e) {
-            throw new IllegalStateException(e);
+            LOGGER.debug("Не найти", e);
         }
         return result;
     }
 
     @Override
     public Item findById(int id) {
+        LOGGER.debug("Поиск по полю id {}", id);
         Item result = null;
         try (PreparedStatement ps = cn.prepareStatement("select * from items where id = ?;")) {
             ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    result = new Item(
-                            rs.getInt("id"),
-                            rs.getString("name"),
-                            rs.getString("created")
-                    );
+                    result = createItem( rs );
                 }
             }
         } catch (Exception e) {
-            throw new IllegalStateException(e);
+            LOGGER.debug("Не удалось найти", e);
         }
         return result;
     }
 
-
-
+     private Item createItem( ResultSet rs ) throws SQLException {
+         Item result = new Item(
+                 rs.getInt("id"),
+                 rs.getString("name"),
+                 rs.getTimestamp("created").toLocalDateTime() );
+         return result;
+     }
 }

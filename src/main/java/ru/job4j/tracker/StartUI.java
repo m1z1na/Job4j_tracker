@@ -32,16 +32,19 @@ public class StartUI {
         Input validate = new ValidateInput(
                 new ConsoleInput()
         );
-        Store tracker = new SqlTracker();
-        UserAction[] actions = {
-                new CreateAction(),
-                new ReplaceAction(),
-                new DeleteAction(),
-                new FindAllAction(),
-                new FindByIdAction(),
-                new FindByNameAction(),
-                new ExitAction()
-        };
-        new StartUI().init(validate, tracker, actions);
+        try (Store tracker = new SqlTracker()) {
+            UserAction[] actions = {
+                    new CreateAction(),
+                    new ReplaceAction(),
+                    new DeleteAction(),
+                    new FindAllAction(),
+                    new FindByIdAction(),
+                    new FindByNameAction(),
+                    new ExitAction()
+            };
+            new StartUI().init(validate, tracker, actions);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
