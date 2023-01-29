@@ -105,7 +105,7 @@ public class SqlTracker implements Store {
         try (PreparedStatement ps = cn.prepareStatement("select * from items;")) {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    result.add(createItem( rs ));
+                    result.add(createItem(rs));
                 }
             }
 
@@ -123,7 +123,7 @@ public class SqlTracker implements Store {
             ps.setString(1, "%" + key + "%");
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    result.add( createItem( rs ));
+                    result.add(createItem(rs));
                 }
             }
 
@@ -141,7 +141,7 @@ public class SqlTracker implements Store {
             ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    result = createItem( rs );
+                    result = createItem(rs);
                 }
             }
         } catch (Exception e) {
@@ -150,11 +150,11 @@ public class SqlTracker implements Store {
         return result;
     }
 
-     private Item createItem( ResultSet rs ) throws SQLException {
+     private Item createItem(ResultSet rs) throws SQLException {
          Item result = new Item(
                  rs.getInt("id"),
                  rs.getString("name"),
-                 rs.getTimestamp("created").toLocalDateTime() );
+                 rs.getTimestamp("created").toLocalDateTime());
          return result;
      }
 }
