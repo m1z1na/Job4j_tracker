@@ -1,8 +1,9 @@
 package ru.job4j.tracker.store;
 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.job4j.tracker.model.Item;
-import org.slf4j.Logger;
+
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.sql.*;
@@ -11,13 +12,13 @@ import java.util.List;
 import java.util.Properties;
 
 public class SqlTracker implements Store {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(SqlTracker.class.getName());
     private Connection cn;
 
     public SqlTracker() {
         init();
     }
-    private static final Logger LOGGER = LoggerFactory.getLogger(SqlTracker.class.getName());
+
     public SqlTracker(Connection cn) {
         this.cn = cn;
     }
@@ -52,17 +53,17 @@ public class SqlTracker implements Store {
     public Item add(Item item) {
         LOGGER.debug("Добавление , name: {}", item.getName());
         try (PreparedStatement ps = cn.prepareStatement(
-                                "insert into items(name,created) values(?,?);",
-                                    Statement.RETURN_GENERATED_KEYS)) {
+                "insert into items(name,created) values(?,?);",
+                Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, item.getName());
             ps.setTimestamp(2, Timestamp.valueOf(item.getCreated()));
+            ps.execute();
             try (ResultSet key = ps.getGeneratedKeys()) {
                 if (key.next()) {
                     item.setId(key.getInt(1));
                     LOGGER.debug("Генерируем id: {}", item.getId());
                 }
             }
-            ps.execute();
         } catch (Exception e) {
             LOGGER.debug("Не удалось добавить", e);
         }
@@ -76,7 +77,7 @@ public class SqlTracker implements Store {
         boolean result = false;
         try (PreparedStatement ps = cn.prepareStatement("update items set name = ?, created = ? where id = ?;")) {
             ps.setString(1, item.getName());
-            ps.setString(2, String.valueOf(item.getCreated()));
+            ps.setTimestamp(2, Timestamp.valueOf(item.getCreated()));
             ps.setInt(3, id);
             result = ps.executeUpdate() > 0;
         } catch (Exception e) {
@@ -108,7 +109,6 @@ public class SqlTracker implements Store {
                     result.add(createItem(rs));
                 }
             }
-
         } catch (Exception e) {
             LOGGER.debug("Не удалось найти", e);
         }
@@ -126,7 +126,6 @@ public class SqlTracker implements Store {
                     result.add(createItem(rs));
                 }
             }
-
         } catch (Exception e) {
             LOGGER.debug("Не найти", e);
         }
@@ -150,11 +149,11 @@ public class SqlTracker implements Store {
         return result;
     }
 
-     private Item createItem(ResultSet rs) throws SQLException {
-         Item result = new Item(
-                 rs.getInt("id"),
-                 rs.getString("name"),
-                 rs.getTimestamp("created").toLocalDateTime());
-         return result;
-     }
+    private Item createItem(ResultSet rs) throws SQLException {
+        Item result = new Item(
+                rs.getInt("id"),
+                rs.getString("name"),
+                rs.getTimestamp("created").toLocalDateTime());
+        return result;
+    }
 }
