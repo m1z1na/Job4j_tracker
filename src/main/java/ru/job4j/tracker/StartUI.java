@@ -32,7 +32,7 @@ public class StartUI {
         Input validate = new ValidateInput(
                 new ConsoleInput()
         );
-        try (Store tracker = new SqlTracker()) {
+     /*   try (Store tracker = new SqlTracker()) {
             UserAction[] actions = {
                     new CreateAction(),
                     new ReplaceAction(),
@@ -45,6 +45,6 @@ public class StartUI {
             new StartUI().init(validate, tracker, actions);
         } catch (Exception e) {
             e.printStackTrace();
-        }
+        }*/
     }
 }
