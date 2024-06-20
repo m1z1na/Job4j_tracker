@@ -1,13 +1,13 @@
 package ru.job4j.tracker.model;
 
-import java.sql.Timestamp;
+import lombok.Data;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
+@Data
 public class Item {
 
     private int id;
-
     private String name;
     private LocalDateTime created;
 
@@ -24,40 +24,14 @@ public class Item {
     public Item(int id, String name, String created) {
     }
 
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
     @Override
     public String toString() {
-        return String.format("id: %s, name: %s, created: %s", id, name,  created);
+        return String.format("id: %s, name: %s, created: %s", id, name, created);
     }
-
-
 
     @Override
     public int hashCode() {
         return Objects.hash(id, name);
-    }
-
-    public LocalDateTime getCreated() {
-        return created;
-    }
-
-    public void setCreated(LocalDateTime created) {
-        this.created = created;
     }
 
     @Override
